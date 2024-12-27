@@ -3,13 +3,14 @@
 import logging
 from typing import Any
 
-import storage
-
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, User, Message
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
 import config
-from service.models import ButtonAction, EventInfo, EventStatus
+from db import event_repo
+from service.models import ButtonAction, Event, EventStatus
+
+event_repo = event_repo.EventRepo()
 
 # Enable logging
 logging.basicConfig(
@@ -43,7 +44,7 @@ def def_keyboard(event_status: EventStatus) -> list[list[InlineKeyboardButton]]:
                                          callback_data=ButtonAction.OPEN_EVENT.value), ]]
 
 
-def get_markup(event: EventInfo) -> InlineKeyboardMarkup:
+def get_markup(event: Event) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(def_keyboard(event.status))
 
 
@@ -52,18 +53,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def event(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    event = EventInfo('event')
+    event = Event(event_name='event')
     message = await update.message.reply_text(event.to_str(), reply_markup=get_markup(event))
     event.create_key(message.chat_id, message.message_id)
-    storage.save_event_info(event)
-
+    event_repo.save_event(event)
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     key = get_key(query.message)
     await query.answer()
 
-    event = storage.get_event_info(key)
+    event = event_repo.get_event(*key)
 
     user = query.from_user
     match query.data:
@@ -76,6 +76,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         case ButtonAction.CLOSE_EVENT.value:
             event.status = EventStatus.CLOSED
 
+    event_repo.save_event(event)
     await query.message.edit_text(text=event.to_str(), reply_markup=get_markup(event))
 
 
