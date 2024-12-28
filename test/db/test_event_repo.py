@@ -21,7 +21,7 @@ def db_clean(event_repo):
 
 @pytest.fixture
 def event_repo() -> EventRepo:
-    return EventRepo('test1/data')
+    return EventRepo(data_directory='test/data')
 
 @pytest.fixture
 def event() -> Event:

@@ -3,6 +3,7 @@
 import logging
 from typing import Any
 
+import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, User, Message
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
@@ -38,6 +39,12 @@ def def_keyboard(event_status: EventStatus) -> list[list[InlineKeyboardButton]]:
                     InlineKeyboardButton("Я не иду",
                                          callback_data=ButtonAction.ADD_INACTIVE_USER.value),
                 ],
+                [
+                    InlineKeyboardButton("➕",
+                                         callback_data=ButtonAction.ADD_FROM_ME.value),
+                    InlineKeyboardButton("➖",
+                                         callback_data=ButtonAction.REMOVE_FROM_ME.value),
+                ],
             ]
         case EventStatus.CLOSED:
             return [[InlineKeyboardButton("Открыть сбор",
@@ -53,8 +60,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def event(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    event = Event(event_name='event')
-    message = await update.message.reply_text(event.to_str(), reply_markup=get_markup(event))
+    args = context.args
+    event_name = 'event'
+    if args:
+        event_name = ' '.join(args)
+
+    event = Event(event_name=event_name)
+
+    message = await context.bot.send_message(
+        chat_id=update.message.chat_id,
+        text=event.to_str(),
+        reply_markup=get_markup(event))
     event.create_key(message.chat_id, message.message_id)
     event_repo.save_event(event)
 
@@ -68,16 +84,30 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = query.from_user
     match query.data:
         case ButtonAction.ADD_ACTIVE_USER.value:
-            event.add_active_user(user)
+            if not event.add_active_user(user):
+                return
         case ButtonAction.ADD_INACTIVE_USER.value:
-            event.add_inactive_user(user)
+            if not event.add_inactive_user(user):
+                return
+        case ButtonAction.ADD_FROM_ME.value:
+            event.add_user_from_me(user)
+        case ButtonAction.REMOVE_FROM_ME.value:
+            if not event.remove_user_from_me(user):
+                return
         case ButtonAction.OPEN_EVENT.value:
             event.status = EventStatus.OPENED
         case ButtonAction.CLOSE_EVENT.value:
             event.status = EventStatus.CLOSED
 
     event_repo.save_event(event)
-    await query.message.edit_text(text=event.to_str(), reply_markup=get_markup(event))
+    try:
+        await query.message.edit_text(
+            text=event.to_str(),
+            reply_markup=get_markup(event))
+    except telegram.error.BadRequest as e:
+        logger.info(e.message)
+
+
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

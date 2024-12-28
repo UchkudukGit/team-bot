@@ -43,4 +43,4 @@ class EventRepo:
         return pure_path
 
     def _get_data_path(self):
-        return PurePath(__file__).parent.parent.joinpath(DATA_DIRECTORY)
+        return PurePath(__file__).parent.parent.joinpath(self.data_directory)
