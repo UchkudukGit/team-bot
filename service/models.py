@@ -13,6 +13,7 @@ class ButtonAction(Enum):
     REMOVE_FROM_ME = 'REMOVE_FROM_ME'
     OPEN_EVENT = 'OPEN_EVENT'
     CLOSE_EVENT = 'CLOSE_EVENT'
+    DELETE_EVENT = 'DELETE_EVENT'
 
 class EventStatus(Enum):
     OPENED = 'OPENED'
@@ -33,6 +34,7 @@ class ShortUser(BaseModel):
         )
 
 class Event(BaseModel):
+    owner: ShortUser
     event_name: str
     status: EventStatus = EventStatus.OPENED
     chat_id: int | None = None
@@ -46,10 +48,8 @@ class Event(BaseModel):
         self.chat_id = chat_id
         self.message_id = message_id
 
-    def get_key(self) -> tuple[int, int] | None:
-        if self.chat_id and self.message_id:
-            return self.chat_id, self.message_id
-        return None
+    def is_owner(self, telegram_user: User) -> bool:
+        return ShortUser.from_user(telegram_user) == self.owner
 
     def add_active_user(self, telegram_user: User) -> bool:
         user = ShortUser.from_user(telegram_user)
@@ -91,7 +91,7 @@ class Event(BaseModel):
 
     def __str__(self) -> str:
         separator = '-' * 20
-        result_str_array = [f'{self.event_name}\n']
+        result_str_array = [f'{self.event_name}\nсоздал {self.owner.username}\n']
         if self.active_users:
             result_str_array.append(self._active_users_to_str())
         if self.inactive_users:

@@ -28,6 +28,11 @@ class EventRepo:
         with open(path, 'r', encoding='utf-8') as event_file:
             return Event.model_validate_json(event_file.read())
 
+    def delete_event(self, event_info: Event) -> None:
+        path = Path(self._get_path(event_info.chat_id, event_info.message_id))
+        if path.exists():
+            path.unlink()
+
     def delete_all(self) -> None:
         shutil.rmtree(Path(self._get_data_path()))
 

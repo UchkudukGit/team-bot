@@ -9,7 +9,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 
 import config
 from db import event_repo
-from service.models import ButtonAction, Event, EventStatus
+from service.models import ButtonAction, Event, EventStatus, ShortUser
 
 event_repo = event_repo.EventRepo()
 
@@ -31,24 +31,32 @@ def def_keyboard(event_status: EventStatus) -> list[list[InlineKeyboardButton]]:
     match event_status:
         case EventStatus.OPENED:
             return [
-                [InlineKeyboardButton("Закрыть сбор",
-                                      callback_data=ButtonAction.CLOSE_EVENT.value), ],
                 [
-                    InlineKeyboardButton("Я иду",
+                    InlineKeyboardButton("🏁Закрыть сбор",
+                                         callback_data=ButtonAction.CLOSE_EVENT.value),
+                ],
+                [
+                    InlineKeyboardButton("✅Я иду",
                                          callback_data=ButtonAction.ADD_ACTIVE_USER.value),
-                    InlineKeyboardButton("Я не иду",
+                    InlineKeyboardButton("❌Я не иду",
                                          callback_data=ButtonAction.ADD_INACTIVE_USER.value),
                 ],
                 [
-                    InlineKeyboardButton("➕",
+                    InlineKeyboardButton("➕от меня",
                                          callback_data=ButtonAction.ADD_FROM_ME.value),
-                    InlineKeyboardButton("➖",
+                    InlineKeyboardButton("➖от меня",
                                          callback_data=ButtonAction.REMOVE_FROM_ME.value),
                 ],
             ]
         case EventStatus.CLOSED:
-            return [[InlineKeyboardButton("Открыть сбор",
-                                         callback_data=ButtonAction.OPEN_EVENT.value), ]]
+            return [
+                [
+                    InlineKeyboardButton("↩️Открыть сбор",
+                                         callback_data=ButtonAction.OPEN_EVENT.value),
+                    InlineKeyboardButton("❌Удалить сбор",
+                                         callback_data=ButtonAction.DELETE_EVENT.value),
+                ]
+            ]
 
 
 def get_markup(event: Event) -> InlineKeyboardMarkup:
@@ -60,12 +68,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def event(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.message.from_user
     args = context.args
     event_name = 'event'
     if args:
         event_name = ' '.join(args)
 
-    event = Event(event_name=event_name)
+    event = Event(owner=ShortUser.from_user(user), event_name=event_name)
 
     message = await context.bot.send_message(
         chat_id=update.message.chat_id,
@@ -74,12 +83,12 @@ async def event(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     event.create_key(message.chat_id, message.message_id)
     event_repo.save_event(event)
 
+
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    key = get_key(query.message)
     await query.answer()
 
-    event = event_repo.get_event(*key)
+    event = event_repo.get_event(*get_key(query.message))
 
     user = query.from_user
     match query.data:
@@ -98,6 +107,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             event.status = EventStatus.OPENED
         case ButtonAction.CLOSE_EVENT.value:
             event.status = EventStatus.CLOSED
+        case ButtonAction.DELETE_EVENT.value:
+            if event.is_owner(user):
+                await query.message.delete()
+                event_repo.delete_event(event)
+                return
+
 
     event_repo.save_event(event)
     try:
@@ -106,8 +121,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             reply_markup=get_markup(event))
     except telegram.error.BadRequest as e:
         logger.info(e.message)
-
-
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
