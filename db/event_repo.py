@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path, PurePath
 
-from service.models import Event
+from models import Event
 
 __storage: dict[(int, int), Event] = {}
 

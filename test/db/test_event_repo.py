@@ -1,7 +1,7 @@
 import pytest
 
 from db.event_repo import EventRepo
-from service.models import Event
+from models import Event
 
 CHAT_ID = 200
 MESSAGE_ID = 100

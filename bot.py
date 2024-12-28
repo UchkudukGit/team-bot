@@ -4,12 +4,12 @@ import logging
 from typing import Any
 
 import telegram
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, User, Message
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
 import config
 from db import event_repo
-from service.models import ButtonAction, Event, EventStatus, ShortUser
+from models import ButtonAction, Event, EventStatus, ShortUser
 
 event_repo = event_repo.EventRepo()
 
