@@ -14,6 +14,7 @@ class ButtonAction(Enum):
     OPEN_EVENT = 'OPEN_EVENT'
     CLOSE_EVENT = 'CLOSE_EVENT'
     DELETE_EVENT = 'DELETE_EVENT'
+    DELETE_COMPLETELY = 'DELETE_COMPLETELY'
 
 class EventStatus(Enum):
     OPENED = 'OPENED'

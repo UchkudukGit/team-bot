@@ -57,6 +57,15 @@ def def_keyboard(event_status: EventStatus) -> list[list[InlineKeyboardButton]]:
                                          callback_data=ButtonAction.DELETE_EVENT.value),
                 ]
             ]
+        case EventStatus.DELETED:
+            return [
+                [
+                    InlineKeyboardButton("↩️ Открыть сбор",
+                                         callback_data=ButtonAction.OPEN_EVENT.value),
+                    InlineKeyboardButton("❌ Удалить безвозвратно",
+                                         callback_data=ButtonAction.DELETE_COMPLETELY.value),
+                ]
+            ]
 
 
 def get_markup(event: Event) -> InlineKeyboardMarkup:
@@ -109,10 +118,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             event.status = EventStatus.CLOSED
         case ButtonAction.DELETE_EVENT.value:
             if event.is_owner(user):
+                event.status = EventStatus.DELETED
+        case ButtonAction.DELETE_COMPLETELY.value:
+            if event.is_owner(user):
                 await query.message.delete()
                 event_repo.delete_event(event)
                 return
-
 
     event_repo.save_event(event)
     try:
