@@ -130,6 +130,6 @@ class Event(BaseModel):
 def user_to_str(user: ShortUser) -> str:
 
     full_name = user.full_name
-    if user.full_name.startswith('@'):
-        return f'{user.full_name} {full_name}'
+    if user.username.startswith('@'):
+        return f'{user.username} {full_name}'
     return full_name
