@@ -32,28 +32,28 @@ def def_keyboard(event_status: EventStatus) -> list[list[InlineKeyboardButton]]:
         case EventStatus.OPENED:
             return [
                 [
-                    InlineKeyboardButton("🏁Закрыть сбор",
+                    InlineKeyboardButton("🏁 Закрыть сбор",
                                          callback_data=ButtonAction.CLOSE_EVENT.value),
                 ],
                 [
-                    InlineKeyboardButton("✅Я иду",
+                    InlineKeyboardButton("✅ Я иду",
                                          callback_data=ButtonAction.ADD_ACTIVE_USER.value),
-                    InlineKeyboardButton("❌Я не иду",
+                    InlineKeyboardButton("❌ Я не иду",
                                          callback_data=ButtonAction.ADD_INACTIVE_USER.value),
                 ],
                 [
-                    InlineKeyboardButton("➕от меня",
+                    InlineKeyboardButton("➕1️⃣ от меня",
                                          callback_data=ButtonAction.ADD_FROM_ME.value),
-                    InlineKeyboardButton("➖от меня",
+                    InlineKeyboardButton("➖1️⃣ от меня",
                                          callback_data=ButtonAction.REMOVE_FROM_ME.value),
                 ],
             ]
         case EventStatus.CLOSED:
             return [
                 [
-                    InlineKeyboardButton("↩️Открыть сбор",
+                    InlineKeyboardButton("↩️ Открыть сбор",
                                          callback_data=ButtonAction.OPEN_EVENT.value),
-                    InlineKeyboardButton("❌Удалить сбор",
+                    InlineKeyboardButton("❌ Удалить сбор",
                                          callback_data=ButtonAction.DELETE_EVENT.value),
                 ]
             ]
