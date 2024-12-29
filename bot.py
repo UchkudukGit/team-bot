@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import logging
+import re
 from typing import Any
 
 import telegram
@@ -71,19 +72,39 @@ def def_keyboard(event_status: EventStatus) -> list[list[InlineKeyboardButton]]:
 def get_markup(event: Event) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(def_keyboard(event.status))
 
+def parse_args(s) -> dict[str, str]:
+    # Регулярное выражение для поиска пар ключ=значение
+    pattern = r'(\w+)=(".*?"|\S+)'
+    matches = re.findall(pattern, s)
+
+    # Преобразуем список кортежей в словарь
+    result = {key: value.strip('"') for key, value in matches}
+    return result
+
+def get_event_args(update: Update, context: ContextTypes.DEFAULT_TYPE) -> dict[str, str]:
+    user = update.message.from_user
+    args = ' '.join(context.args)
+    event_args={'owner':ShortUser.from_user(user), 'name': 'event'}
+    if not args:
+        return event_args
+
+    dict_args = parse_args(args)
+    if not dict_args:
+        event_args['name'] = args
+        return event_args
+    event_args.update(dict_args)
+    return event_args
+
+
+def create_event(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Event:
+    return Event(**get_event_args(update, context))
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await event(update, context)
-
+    await help_command(update, context)
 
 async def event(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.message.from_user
-    args = context.args
-    event_name = 'event'
-    if args:
-        event_name = ' '.join(args)
 
-    event = Event(owner=ShortUser.from_user(user), event_name=event_name)
+    event = create_event(update, context)
 
     message = await context.bot.send_message(
         chat_id=update.message.chat_id,
@@ -135,7 +156,16 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Use /event <event_name> for start event")
+    text = '''Бот для сбора участников для события
+Что бы открыть сбор необходимо использовать команду /event
+Варианты начала события:
+/event - создаст событие с неограниченным кол-ом участников
+/event Играем в футбол в четверг в 20:00 - создаст событие c именем
+/event name="пьянка" limit=12 - создаст событие c именем и ограничением по кол-ву участников
+/event name="пьянка" limit=12 reserve=2  - создаст событие c именем и ограничением по кол-ву участников и запасных
+
+    '''
+    await update.message.reply_text(text)
 
 
 def main() -> None:

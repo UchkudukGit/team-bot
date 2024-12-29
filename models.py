@@ -26,6 +26,14 @@ class ShortUser(BaseModel):
     username: str
     is_me: bool = True
 
+    def __str__(self) -> str:
+        name = self.full_name
+        if self.username.startswith('@'):
+            name = f'{self.username} {name}'
+        if self.is_me:
+            return f'✅ {name}'
+        return f'1️⃣ от {name}'
+
     @classmethod
     def from_user(cls, user: User, is_me=True) -> 'ShortUser':
         return ShortUser(
@@ -36,7 +44,9 @@ class ShortUser(BaseModel):
 
 class Event(BaseModel):
     owner: ShortUser
-    event_name: str
+    name: str
+    limit: int | None = None
+    reserve: int | None = None
     status: EventStatus = EventStatus.OPENED
     chat_id: int | None = None
     message_id: int | None = None
@@ -92,7 +102,12 @@ class Event(BaseModel):
 
     def __str__(self) -> str:
         separator = '-' * 20
-        result_str_array = [f'{self.event_name}\nсоздал {self.owner.username}\n']
+        result_str_array = [f'{self.name}\nсоздал {self.owner.username}']
+        if self.limit:
+            result_str_array.append(f'limit: {self.limit}')
+            if self.reserve:
+                result_str_array.append(f'reserve: {self.reserve}')
+        result_str_array.append('\n')
         if self.active_users:
             result_str_array.append(self._active_users_to_str())
         if self.inactive_users:
@@ -105,10 +120,12 @@ class Event(BaseModel):
     def _active_users_to_str(self) -> str:
         users_str_array = []
         for index, user in enumerate(self.active_users):
-            if user.is_me:
-                users_str_array.append(f'{index + 1} ✅ {user_to_str(user)}')
-            elif not user.is_me:
-                users_str_array.append(f'{index + 1} 1️⃣ от {user_to_str(user)}')
+            if self.limit:
+                if index == self.limit:
+                    users_str_array.append('\nЗапасные:')
+                if self.reserve and index == self.limit + self.reserve:
+                    users_str_array.append('\nРезерв:')
+            users_str_array.append(f'{index + 1} {user}')
         return '\n'.join(users_str_array)
 
     def _inactive_users_to_str(self) -> str:
