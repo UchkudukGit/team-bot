@@ -42,9 +42,9 @@ def def_keyboard(event_status: EventStatus) -> list[list[InlineKeyboardButton]]:
                                          callback_data=ButtonAction.ADD_INACTIVE_USER.value),
                 ],
                 [
-                    InlineKeyboardButton("➕1️⃣ от меня",
+                    InlineKeyboardButton("плюс 1️⃣",
                                          callback_data=ButtonAction.ADD_FROM_ME.value),
-                    InlineKeyboardButton("➖1️⃣ от меня",
+                    InlineKeyboardButton("минус 1️⃣",
                                          callback_data=ButtonAction.REMOVE_FROM_ME.value),
                 ],
             ]
