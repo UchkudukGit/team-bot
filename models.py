@@ -107,7 +107,7 @@ class Event(BaseModel):
             if user.is_me:
                 users_str_array.append(f'{index + 1} ✅ {user_to_str(user)}')
             elif not user.is_me:
-                users_str_array.append(f'{index + 1} ➕1️⃣ от {user_to_str(user)}')
+                users_str_array.append(f'{index + 1} 1️⃣ от {user_to_str(user)}')
         return '\n'.join(users_str_array)
 
     def _inactive_users_to_str(self) -> str:
